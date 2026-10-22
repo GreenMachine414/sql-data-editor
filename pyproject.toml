@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "data-editor"
+dynamic = ["version"]
+description = "Desktop app for viewing and editing rows in SQL Server tables"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PySide6>=6.6",
+    "pyodbc>=5.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pyinstaller>=6.3"]
+
+[project.gui-scripts]
+data-editor = "data_editor.__main__:main"
+
+[tool.setuptools.dynamic]
+version = { attr = "data_editor.__version__" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
