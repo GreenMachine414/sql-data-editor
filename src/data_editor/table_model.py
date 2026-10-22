@@ -9,13 +9,29 @@ from PySide6.QtGui import QColor, QFont
 
 from .db import Column, coerce, format_value
 
-SORT_ROLE = Qt.UserRole + 1
 TEXT_TYPES = {"char", "varchar", "nchar", "nvarchar", "text", "ntext", "sysname"}
+
+# data() runs for every visible cell and role, so compare roles as plain ints:
+# comparing against PySide6 enum members is many times slower.
+DISPLAY_ROLE = Qt.ItemDataRole.DisplayRole.value
+EDIT_ROLE = Qt.ItemDataRole.EditRole.value
+FOREGROUND_ROLE = Qt.ItemDataRole.ForegroundRole.value
+BACKGROUND_ROLE = Qt.ItemDataRole.BackgroundRole.value
+FONT_ROLE = Qt.ItemDataRole.FontRole.value
+TOOLTIP_ROLE = Qt.ItemDataRole.ToolTipRole.value
+SORT_ROLE = Qt.ItemDataRole.UserRole.value + 1
 
 NEW_COLOR = QColor(46, 160, 67, 70)
 CHANGED_COLOR = QColor(219, 171, 9, 90)
 DELETED_COLOR = QColor(218, 54, 51, 70)
 NULL_COLOR = QColor(128, 128, 128)
+
+
+def _font(italic: bool, strike: bool) -> QFont:
+    font = QFont()
+    font.setItalic(italic)
+    font.setStrikeOut(strike)
+    return font
 
 
 @dataclass
@@ -38,6 +54,8 @@ class RowTableModel(QAbstractTableModel):
         super().__init__(parent)
         self.columns: list[Column] = []
         self.rows: list[Row] = []
+        # (italic for NULL, strikeout for deleted) -> font, built once
+        self._fonts = {(i, s): _font(i, s) for i in (False, True) for s in (False, True)}
 
     # ---- loading -------------------------------------------------------------
 
@@ -63,34 +81,34 @@ class RowTableModel(QAbstractTableModel):
     def columnCount(self, parent=QModelIndex()):
         return 0 if parent.isValid() else len(self.columns)
 
-    def data(self, index, role=Qt.DisplayRole):
-        if not index.isValid():
-            return None
+    def data(self, index, role=DISPLAY_ROLE):
         row = self.rows[index.row()]
         col = index.column()
         value = row.values[col]
 
-        if role == Qt.DisplayRole:
-            return "NULL" if value is None else format_value(value)
-        if role == Qt.EditRole:
+        if role == DISPLAY_ROLE:
+            if value is None:
+                return "NULL"
+            return value if type(value) is str else format_value(value)
+        if role == EDIT_ROLE:
             return format_value(value)
         if role == SORT_ROLE:
             return value
-        if role == Qt.ForegroundRole and value is None:
-            return NULL_COLOR
-        if role == Qt.FontRole and (value is None or row.deleted):
-            font = QFont()
-            font.setItalic(value is None)
-            font.setStrikeOut(row.deleted)
-            return font
-        if role == Qt.BackgroundRole:
+        if role == FOREGROUND_ROLE:
+            return NULL_COLOR if value is None else None
+        if role == FONT_ROLE:
+            if value is None or row.deleted:
+                return self._fonts[(value is None, row.deleted)]
+            return None
+        if role == BACKGROUND_ROLE:
             if row.deleted:
                 return DELETED_COLOR
-            if row.is_new:
+            if row.original is None:
                 return NEW_COLOR
             if col in row.changed:
                 return CHANGED_COLOR
-        if role == Qt.ToolTipRole and not row.is_new and col in row.changed:
+            return None
+        if role == TOOLTIP_ROLE and not row.is_new and col in row.changed:
             return f"Original: {'NULL' if row.original[col] is None else format_value(row.original[col])}"
         return None
 

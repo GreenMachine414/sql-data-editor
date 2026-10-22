@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSettings, QThread, Signal
+from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -15,26 +15,10 @@ from PySide6.QtWidgets import (
 )
 
 from .db import ConnectionInfo, Database, available_drivers
+from .worker import Worker
 
 SQL_AUTH = "SQL Server Authentication"
 WINDOWS_AUTH = "Windows Authentication"
-
-
-class Worker(QThread):
-    """Runs a blocking function off the UI thread."""
-
-    succeeded = Signal(object)
-    failed = Signal(str)
-
-    def __init__(self, fn, parent=None):
-        super().__init__(parent)
-        self.fn = fn
-
-    def run(self):
-        try:
-            self.succeeded.emit(self.fn())
-        except Exception as exc:  # noqa: BLE001 - surface any driver error to the user
-            self.failed.emit(str(exc))
 
 
 class LoginDialog(QDialog):

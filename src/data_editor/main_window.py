@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from time import perf_counter
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
@@ -25,6 +27,13 @@ from PySide6.QtWidgets import (
 from . import __version__
 from .db import Database
 from .table_model import RowTableModel, SortProxy
+from .widgets import LoadingOverlay
+from .worker import Worker
+
+# Column widths are sized from this many rows rather than every loaded row,
+# which was by far the slowest part of opening a table.
+SIZE_SAMPLE_ROWS = 60
+MAX_COLUMN_WIDTH = 320
 
 
 class MainWindow(QMainWindow):
@@ -32,6 +41,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.db = database
         self.current: tuple[str, str] | None = None  # (schema, table)
+        self.loading = False
+        self._queued_load = None  # a load requested while another was running
 
         self.setWindowTitle(f"Data Editor {__version__}")
         self.resize(1200, 750)
@@ -86,7 +97,8 @@ class MainWindow(QMainWindow):
         # Left: table list
         self.table_search = QLineEdit(placeholderText="Filter tables…", clearButtonEnabled=True)
         self.table_search.textChanged.connect(self._filter_tables)
-        self.table_list = QListWidget()
+        self.table_list = QListWidget(objectName="tableList")
+        self.table_list.setMouseTracking(True)  # needed for the hover highlight
         self.table_list.currentItemChanged.connect(self._table_chosen)
         left = QWidget()
         left_layout = QVBoxLayout(left)
@@ -125,7 +137,10 @@ class MainWindow(QMainWindow):
             QAbstractItemView.DoubleClicked | QAbstractItemView.EditKeyPressed | QAbstractItemView.AnyKeyPressed
         )
         self.view.horizontalHeader().setStretchLastSection(True)
+        self.view.horizontalHeader().setResizeContentsPrecision(SIZE_SAMPLE_ROWS)
+        self.view.verticalHeader().setResizeContentsPrecision(SIZE_SAMPLE_ROWS)
         self.view.verticalHeader().setDefaultSectionSize(24)
+        self.overlay = LoadingOverlay(self.view)
         self.view.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.view.addActions([self.act_copy, self.act_paste, self.act_null, self.act_add, self.act_delete])
 
@@ -216,25 +231,67 @@ class MainWindow(QMainWindow):
     def reload_rows(self, confirm=True):
         if not self.current or (confirm and not self._confirm_leave()):
             return
-        schema, table = self.current
-        QGuiApplication.setOverrideCursor(Qt.WaitCursor)
-        try:
-            columns = self.db.columns(schema, table)
-            rows = self.db.fetch_rows(schema, table, columns, self.limit.value(), self.where.text())
-        except Exception as exc:  # noqa: BLE001
-            QGuiApplication.restoreOverrideCursor()
-            QMessageBox.critical(self, "Error loading rows", str(exc))
+        request = (self.current, self.where.text(), self.limit.value())
+        if self.loading:
+            # The connection can only run one query at a time; load this once the current one finishes.
+            self._queued_load = request
+            self.overlay.start(f"Loading {request[0][0]}.{request[0][1]}…")
             return
+        self._start_load(request)
+
+    def _start_load(self, request):
+        (schema, table), where, limit = request
+        self._queued_load = None
+        self.loading = True
+        self.title.setText(f"{schema}.{table}")
+        self.overlay.start(f"Loading {schema}.{table}…")
+        self.view.setEnabled(False)
+        self._update_state()
+
+        def work():
+            started = perf_counter()
+            columns = self.db.columns(schema, table)
+            rows = self.db.fetch_rows(schema, table, columns, limit, where)
+            return request, columns, rows, perf_counter() - started
+
+        self._loader = Worker(work, self)
+        self._loader.succeeded.connect(self._rows_loaded)
+        self._loader.failed.connect(self._load_failed)
+        self._loader.start()
+
+    def _end_load(self) -> bool:
+        """Finish a background load. Returns True if a newer load was queued and has started."""
+        self.loading = False
+        self._loader.wait()
+        if self._queued_load:
+            self._start_load(self._queued_load)
+            return True
+        self.overlay.stop()
+        self.view.setEnabled(True)
+        self._update_state()
+        return False
+
+    def _load_failed(self, message: str):
+        if self._end_load():
+            return
+        QMessageBox.critical(self, "Error loading rows", message)
+
+    def _rows_loaded(self, result):
+        if self._end_load():
+            return  # the user already moved on to another table
+        ((schema, table), _where, limit), columns, rows, query_seconds = result
+
+        started = perf_counter()
         self.model.load(columns, rows)
         self.view.sortByColumn(-1, Qt.AscendingOrder)
         self.view.resizeColumnsToContents()
         for c in range(self.model.columnCount()):
-            self.view.setColumnWidth(c, min(self.view.columnWidth(c), 320))
-        QGuiApplication.restoreOverrideCursor()
+            self.view.setColumnWidth(c, min(self.view.columnWidth(c), MAX_COLUMN_WIDTH))
+        total_ms = (query_seconds + perf_counter() - started) * 1000
 
         self.title.setText(f"{schema}.{table}")
-        more = " (limit reached — more rows may exist)" if len(rows) >= self.limit.value() else ""
-        self.statusBar().showMessage(f"Loaded {len(rows)} rows{more}", 5000)
+        more = " (limit reached — more rows may exist)" if len(rows) >= limit else ""
+        self.statusBar().showMessage(f"Loaded {len(rows):,} rows in {total_ms:,.0f} ms{more}", 8000)
         if not self.model.has_primary_key:
             self.notice.setText("⚠ This table has no primary key: you can add rows, but not edit or delete them.")
         else:
@@ -295,7 +352,7 @@ class MainWindow(QMainWindow):
                         return  # stop at the first invalid value (error already shown)
 
     def save(self):
-        if not self.current or not self.model.has_changes():
+        if not self.current or self.loading or not self.model.has_changes():
             return
         if self.view.state() == QAbstractItemView.EditingState:
             self.view.setFocus()  # commit the cell currently being edited
@@ -324,12 +381,13 @@ class MainWindow(QMainWindow):
     # ---- state ---------------------------------------------------------------------
 
     def _update_state(self):
-        has_table = self.current is not None
+        has_table = self.current is not None and not self.loading
         dirty = self.model.has_changes()
         for action in (self.act_refresh, self.act_add, self.act_delete, self.act_null, self.act_paste):
             action.setEnabled(has_table)
-        self.act_save.setEnabled(dirty)
-        self.act_discard.setEnabled(dirty)
+        self.act_save.setEnabled(dirty and not self.loading)
+        self.act_discard.setEnabled(dirty and not self.loading)
+        self.db_combo.setEnabled(not self.loading)
         new, modified, deleted = self.model.counts()
         self.pending_label.setText(
             f"Unsaved changes: {new} new, {modified} modified, {deleted} deleted" if dirty else "No unsaved changes"
@@ -359,6 +417,8 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self._confirm_leave():
+            if self.loading:
+                self._loader.wait()
             self.db.close()
             event.accept()
         else:
