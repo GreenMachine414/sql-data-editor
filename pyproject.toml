@@ -5,16 +5,25 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "data-editor"
 dynamic = ["version"]
-description = "Desktop app for viewing and editing rows in SQL Server tables"
+description = "Desktop app for editing rows in SQL Server tables and documenting database schemas (ERD + reference as HTML or PDF)"
 readme = "README.md"
 requires-python = ">=3.10"
+license = { text = "MIT" }
 dependencies = [
-    "PySide6>=6.6",
-    "pyodbc>=5.0",
+    "PySide6-Essentials>=6.6",  # desktop window (Qt Core, Gui, Widgets)
+    "pyodbc>=5.0",              # SQL Server, for editing and documenting
+    "SQLAlchemy>=2.0,<3",       # reads table structure for documenting
+    "reportlab>=4.0",           # PDF output and diagram text measurement
+    # other databases that can be documented, all bundled into the executable
+    "psycopg[binary]>=3.1",     # PostgreSQL
+    "PyMySQL>=1.1",             # MySQL / MariaDB
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "pyinstaller>=6.3"]
+dev = ["pytest>=8", "pypdf>=4", "pyinstaller>=6.3"]
+
+[project.scripts]
+schemadoc = "schemadoc.cli:main"
 
 [project.gui-scripts]
 data-editor = "data_editor.__main__:main"
@@ -26,5 +35,5 @@ version = { attr = "data_editor.__version__" }
 where = ["src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "scripts"]
 testpaths = ["tests"]

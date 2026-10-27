@@ -1,10 +1,10 @@
-﻿import threading
+import threading
 import time
 
 from PySide6.QtCore import QCoreApplication, Qt
 
 from data_editor.db import Column, ConnectionInfo
-from data_editor.main_window import MainWindow
+from data_editor.editor_page import EditorPage
 
 COLUMNS = [Column("Id", "int", False, True, False, True), Column("Name", "nvarchar", True, False, False, False)]
 TABLES = {
@@ -57,46 +57,49 @@ def wait_until(condition, timeout=5.0):
     return False
 
 
-def select_table(window, name):
-    item = window.table_list.findItems(name, Qt.MatchExactly)[0]
-    window.table_list.setCurrentItem(item)
+def select_table(page, name):
+    item = page.table_list.findItems(name, Qt.MatchExactly)[0]
+    page.table_list.setCurrentItem(item)
 
 
 def test_table_loads_in_background_thread():
     db = FakeDatabase(delay=0.3)
-    window = MainWindow(db)
-    window.show()
-    select_table(window, "dbo.Fruit")
+    page = EditorPage()
+    page.show()
+    page.set_database(db)
+    select_table(page, "dbo.Fruit")
 
-    assert window.loading
-    assert not window.view.isEnabled()
-    assert wait_until(lambda: window.overlay.isVisible()), "spinner should appear for slow loads"
+    assert page.loading
+    assert not page.view.isEnabled()
+    assert wait_until(lambda: page.overlay.isVisible()), "spinner should appear for slow loads"
 
-    assert wait_until(lambda: not window.loading)
-    assert window.model.rowCount() == 2
-    assert not window.overlay.isVisible()
-    assert window.view.isEnabled()
+    assert wait_until(lambda: not page.loading)
+    assert page.model.rowCount() == 2
+    assert not page.overlay.isVisible()
+    assert page.view.isEnabled()
     assert threading.get_ident() not in db.thread_ids
-    window.close()
+    page.close()
 
 
 def test_switching_tables_mid_load_shows_the_last_one():
     db = FakeDatabase(delay=0.2)
-    window = MainWindow(db)
-    window.show()
-    select_table(window, "dbo.Fruit")
-    select_table(window, "dbo.Veg")  # clicked while Fruit is still loading
+    page = EditorPage()
+    page.show()
+    page.set_database(db)
+    select_table(page, "dbo.Fruit")
+    select_table(page, "dbo.Veg")  # clicked while Fruit is still loading
 
-    assert wait_until(lambda: not window.loading)
-    assert window.current == ("dbo", "Veg")
-    assert [r.values[1] for r in window.model.rows] == ["Kale", "Leek", "Okra"]
-    window.close()
+    assert wait_until(lambda: not page.loading)
+    assert page.current == ("dbo", "Veg")
+    assert [r.values[1] for r in page.model.rows] == ["Kale", "Leek", "Okra"]
+    page.close()
 
 
 def test_fast_load_does_not_flash_spinner():
-    window = MainWindow(FakeDatabase())
-    window.show()
-    select_table(window, "dbo.Fruit")
-    assert wait_until(lambda: not window.loading)
-    assert not window.overlay.isVisible()
-    window.close()
+    page = EditorPage()
+    page.show()
+    page.set_database(FakeDatabase())
+    select_table(page, "dbo.Fruit")
+    assert wait_until(lambda: not page.loading)
+    assert not page.overlay.isVisible()
+    page.close()

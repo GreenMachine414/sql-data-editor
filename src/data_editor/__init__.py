@@ -1,3 +1,4 @@
-"""Data Editor - a desktop app for editing rows in SQL Server tables."""
+"""Data Editor - edit rows in SQL Server tables and document database schemas."""
 
-__version__ = "1.1.0"
+__version__ = "2.0.0"
+APP_NAME = "Data Editor"

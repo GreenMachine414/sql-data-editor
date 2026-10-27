@@ -11,6 +11,8 @@ LIGHT = {
     "selection": "#cdeae4",
     "selection_text": "#0b2b27",
     "hover": "#e9edf1",
+    "accent_text": "#ffffff",
+    "accent_hover": "#115e59",
 }
 DARK = {
     "accent": "#2dd4bf",
@@ -18,6 +20,8 @@ DARK = {
     "selection": "#1f4d47",
     "selection_text": "#e6f4f1",
     "hover": "#34383d",
+    "accent_text": "#0b2b27",
+    "accent_hover": "#5eead4",
 }
 
 
@@ -59,6 +63,22 @@ def apply_theme(app) -> None:
             background: {c["selection"]};
             color: {c["selection_text"]};
             border-left: 3px solid {c["accent"]};
+        }}
+        QPushButton#primary {{
+            background: {c["accent"]};
+            color: {c["accent_text"]};
+            border: 1px solid {c["accent"]};
+            border-radius: 4px;
+            padding: 6px 18px;
+            font-weight: 600;
+        }}
+        QPushButton#primary:hover {{
+            background: {c["accent_hover"]};
+        }}
+        QPushButton#primary:disabled {{
+            background: palette(midlight);
+            border-color: palette(mid);
+            color: palette(mid);
         }}
         QTableView {{
             gridline-color: palette(midlight);

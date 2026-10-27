@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shop</title><style>
+:root{
+  --paper:#fbfcfd; --panel:#ffffff; --ink:#1d2b3a; --muted:#5f6f82; --line:#dde4ec;
+  --head:#0f766e; --pk:#0f766e; --fk:#b45309; --uq:#6d28d9; --hover:#e9edf1;
+  --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --paper:#0f1720; --panel:#16212d; --ink:#e3eaf2; --muted:#93a3b5; --line:#2a3847;
+         --head:#2dd4bf; --pk:#34d3bf; --fk:#f5a54a; --uq:#b69cf7; --hover:#1d2b3a; }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.55 var(--sans)}
+a{color:inherit}
+header{padding:48px 24px 28px;border-bottom:1px solid var(--line);background:var(--panel)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+header .wrap{padding:0}
+h1{font-size:34px;line-height:1.15;margin:0 0 6px;letter-spacing:-.01em}
+h1 small{display:block;font-size:15px;font-weight:500;color:var(--muted);margin-top:8px;letter-spacing:0}
+.meta{color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:14px}
+.meta b{color:var(--ink);font-weight:600}
+.stats{display:flex;gap:32px;margin-top:22px;flex-wrap:wrap}
+.stats div{font-size:13px;color:var(--muted)}
+.stats strong{display:block;font-size:26px;color:var(--head);font-weight:650;line-height:1.1}
+h2{font-size:21px;margin:44px 0 14px}
+section{scroll-margin-top:16px}
+.erd-bar{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.erd-bar .hint{color:var(--muted);font-size:13px;margin-right:auto}
+button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);cursor:pointer}
+button:hover{background:var(--hover)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--head);outline-offset:2px}
+.erd{border:1px solid var(--line);border-radius:8px;overflow:auto;background:#fff;max-height:78vh}
+.erd svg{display:block;transform-origin:0 0}
+.legend{display:flex;gap:22px;color:var(--muted);font-size:12.5px;margin-top:10px;flex-wrap:wrap}
+.legend svg{vertical-align:middle;margin-right:6px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--paper);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--hover)}
+code,.id{font-family:var(--mono);font-size:13px}
+.type{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.k{display:inline-block;font-size:11px;font-weight:700;padding:1px 6px;border-radius:4px;margin-right:4px;
+   border:1px solid currentColor}
+.k.pk{color:var(--pk)} .k.fk{color:var(--fk)} .k.uq{color:var(--uq)}
+.nn{color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:8px}
+.toc a{font-family:var(--mono);font-size:13px;text-decoration:none;padding:5px 10px;border:1px solid var(--line);
+  border-radius:6px;background:var(--panel)}
+.toc a:hover{border-color:var(--head)}
+.filter{width:100%;max-width:360px;padding:8px 12px;border-radius:6px;border:1px solid var(--line);
+  background:var(--panel);color:var(--ink);font:inherit;margin-bottom:12px}
+.tbl{margin-top:36px;padding-top:4px}
+.tbl h3{font-family:var(--mono);font-size:19px;margin:0 0 4px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tbl h3 a.top{font-family:var(--sans);font-size:12.5px;font-weight:400;color:var(--muted);margin-left:auto}
+.tbl p.comment{margin:0 0 10px;color:var(--muted)}
+.tbl h4{font-size:13.5px;margin:18px 0 8px;color:var(--muted);font-weight:600}
+.none{color:var(--muted);font-size:13.5px;margin:0}
+.ext{color:var(--muted);font-size:12px}
+.out{color:var(--muted)}
+.ix{display:flex;flex-wrap:wrap;gap:6px}
+.ix span{border:1px solid var(--line);border-radius:6px;padding:3px 8px;background:var(--panel)}
+footer{color:var(--muted);font-size:12.5px;padding:40px 24px 48px;text-align:center}
+@media (max-width:640px){ h1{font-size:26px} header{padding:32px 16px 20px} .wrap{padding:0 16px} }
+@media print{ .erd-bar,.filter{display:none} .erd{max-height:none;overflow:visible} .tbl{break-inside:avoid-page} }
+</style></head>
+<body>
+<header><div class="wrap">
+  <h1>Shop<small>Schema reference for 8 selected tables</small></h1>
+  <div class="meta"><span>Database <b>sample</b></span><span>Engine <b>sqlite 3.49.1</b></span><span>Generated <b>2026-10-23 10:20</b></span></div>
+  <div class="stats"><div><strong>8</strong>tables</div><div><strong>37</strong>columns</div><div><strong>8</strong>relationships</div><div><strong>5</strong>indexes</div></div>
+</div></header>
+<main class="wrap">
+  <section id="erd"><h2>Entity relationship diagram</h2>
+    <div class="erd-bar"><span class="hint">Click a table name to jump to its details.</span>
+      <button id="zout" aria-label="Zoom out">−</button><span id="zoomval" class="ext">100%</span>
+      <button id="zin" aria-label="Zoom in">+</button><button id="zfit">Fit</button>
+      <button id="dl">Download SVG</button></div>
+    <div class="erd"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 552" width="820" height="552" font-family="Helvetica, Arial, sans-serif" role="img" aria-label="Entity relationship diagram">
+<rect x="0.0" y="0.0" width="820.0" height="552.0" rx="0" fill="#ffffff" stroke="none" stroke-width="1"/>
+<polyline points="486.0,93.0 562.0,93.0 562.0,75.0 610.0,75.0" fill="none" stroke="#0f766e" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="210.0,481.0 263.0,481.0 263.0,445.0 210.0,445.0" fill="none" stroke="#c2410c" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="215.0,129.0 271.0,129.0 271.0,445.0 210.0,445.0" fill="none" stroke="#c2410c" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="514.0,305.0 570.0,305.0 570.0,75.0 486.0,75.0" fill="none" stroke="#2563eb" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="514.0,287.0 562.0,287.0 562.0,75.0 610.0,75.0" fill="none" stroke="#0f766e" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="215.0,287.0 255.0,287.0 255.0,75.0 215.0,75.0" fill="none" stroke="#be123c" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="215.0,269.0 279.0,269.0 279.0,269.0 311.0,269.0" fill="none" stroke="#7c3aed" stroke-width="1.3" stroke-linejoin="round"/>
+<polyline points="610.0,287.0 554.0,287.0 554.0,269.0 514.0,269.0" fill="none" stroke="#7c3aed" stroke-width="1.3" stroke-linejoin="round"/>
+<line x1="498.0" y1="93.0" x2="486.0" y2="87.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="498.0" y1="93.0" x2="486.0" y2="99.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="502.0" y1="87.0" x2="502.0" y2="99.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="602.0" y1="69.0" x2="602.0" y2="81.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="597.0" y1="69.0" x2="597.0" y2="81.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="222.0" y1="481.0" x2="210.0" y2="475.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="222.0" y1="481.0" x2="210.0" y2="487.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="226.0" y1="475.0" x2="226.0" y2="487.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="218.0" y1="439.0" x2="218.0" y2="451.0" stroke="#c2410c" stroke-width="1.2"/>
+<circle cx="227.0" cy="445.0" r="4" fill="#ffffff" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="227.0" y1="129.0" x2="215.0" y2="123.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="227.0" y1="129.0" x2="215.0" y2="135.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="231.0" y1="123.0" x2="231.0" y2="135.0" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="218.0" y1="439.0" x2="218.0" y2="451.0" stroke="#c2410c" stroke-width="1.2"/>
+<circle cx="227.0" cy="445.0" r="4" fill="#ffffff" stroke="#c2410c" stroke-width="1.2"/>
+<line x1="526.0" y1="305.0" x2="514.0" y2="299.0" stroke="#2563eb" stroke-width="1.2"/>
+<line x1="526.0" y1="305.0" x2="514.0" y2="311.0" stroke="#2563eb" stroke-width="1.2"/>
+<line x1="530.0" y1="299.0" x2="530.0" y2="311.0" stroke="#2563eb" stroke-width="1.2"/>
+<line x1="494.0" y1="69.0" x2="494.0" y2="81.0" stroke="#2563eb" stroke-width="1.2"/>
+<circle cx="503.0" cy="75.0" r="4" fill="#ffffff" stroke="#2563eb" stroke-width="1.2"/>
+<line x1="526.0" y1="287.0" x2="514.0" y2="281.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="526.0" y1="287.0" x2="514.0" y2="293.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="530.0" y1="281.0" x2="530.0" y2="293.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="602.0" y1="69.0" x2="602.0" y2="81.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="597.0" y1="69.0" x2="597.0" y2="81.0" stroke="#0f766e" stroke-width="1.2"/>
+<line x1="227.0" y1="287.0" x2="215.0" y2="281.0" stroke="#be123c" stroke-width="1.2"/>
+<line x1="227.0" y1="287.0" x2="215.0" y2="293.0" stroke="#be123c" stroke-width="1.2"/>
+<line x1="231.0" y1="281.0" x2="231.0" y2="293.0" stroke="#be123c" stroke-width="1.2"/>
+<line x1="223.0" y1="69.0" x2="223.0" y2="81.0" stroke="#be123c" stroke-width="1.2"/>
+<line x1="228.0" y1="69.0" x2="228.0" y2="81.0" stroke="#be123c" stroke-width="1.2"/>
+<line x1="227.0" y1="269.0" x2="215.0" y2="263.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="227.0" y1="269.0" x2="215.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="231.0" y1="263.0" x2="231.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="303.0" y1="263.0" x2="303.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="298.0" y1="263.0" x2="298.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="602.0" y1="281.0" x2="602.0" y2="293.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="597.0" y1="281.0" x2="597.0" y2="293.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="522.0" y1="263.0" x2="522.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<line x1="527.0" y1="263.0" x2="527.0" y2="275.0" stroke="#7c3aed" stroke-width="1.2"/>
+<rect x="610.0" y="40.0" width="170.0" height="102.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="610.0" y="40.0" width="170.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="610.0" y="60.0" width="170.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-customers"><text x="620.0" y="57.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">customers</text></a>
+<text x="620.0" y="78.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="642.0" y="78.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="770.0" y="78.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="611.0" y="84.0" width="168.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="642.0" y="96.2" font-size="9" fill="#1d2b3a" text-anchor="start">email</text>
+<text x="770.0" y="96.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(255)</text>
+<text x="642.0" y="114.2" font-size="9" fill="#1d2b3a" text-anchor="start">full_name</text>
+<text x="770.0" y="114.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(120)</text>
+<rect x="611.0" y="120.0" width="168.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="642.0" y="132.2" font-size="9" fill="#1d2b3a" text-anchor="start">created_at</text>
+<text x="770.0" y="132.2" font-size="9" fill="#5f6f82" text-anchor="end">TIMESTAMP</text>
+<rect x="610.0" y="40.0" width="170.0" height="102.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="40.0" width="175.0" height="138.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="40.0" width="175.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="311.0" y="60.0" width="175.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-addresses"><text x="321.0" y="57.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">addresses</text></a>
+<text x="321.0" y="78.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="343.0" y="78.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="476.0" y="78.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="312.0" y="84.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="321.0" y="96.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="343.0" y="96.2" font-size="9" fill="#1d2b3a" text-anchor="start">customer_id</text>
+<text x="476.0" y="96.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<text x="343.0" y="114.2" font-size="9" fill="#1d2b3a" text-anchor="start">line1</text>
+<text x="476.0" y="114.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(200)</text>
+<rect x="312.0" y="120.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="343.0" y="132.2" font-size="9" fill="#1d2b3a" text-anchor="start">city</text>
+<text x="476.0" y="132.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(80)</text>
+<text x="343.0" y="150.2" font-size="9" fill="#1d2b3a" text-anchor="start">postcode</text>
+<text x="476.0" y="150.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(20)</text>
+<rect x="312.0" y="156.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="343.0" y="168.2" font-size="9" fill="#1d2b3a" text-anchor="start">country</text>
+<text x="476.0" y="168.2" font-size="9" fill="#5f6f82" text-anchor="end">CHAR(2)</text>
+<rect x="311.0" y="40.0" width="175.0" height="138.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="410.0" width="170.0" height="84.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="410.0" width="170.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="40.0" y="430.0" width="170.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-categories"><text x="50.0" y="427.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">categories</text></a>
+<text x="50.0" y="448.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="72.0" y="448.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="200.0" y="448.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="41.0" y="454.0" width="168.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="72.0" y="466.2" font-size="9" fill="#1d2b3a" text-anchor="start">name</text>
+<text x="200.0" y="466.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(80)</text>
+<text x="50.0" y="484.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="72.0" y="484.2" font-size="9" fill="#1d2b3a" text-anchor="start">parent_id</text>
+<text x="200.0" y="484.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="40.0" y="410.0" width="170.0" height="84.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="40.0" width="175.0" height="138.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="40.0" width="175.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="40.0" y="60.0" width="175.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-products"><text x="50.0" y="57.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">products</text></a>
+<text x="50.0" y="78.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="72.0" y="78.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="205.0" y="78.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="41.0" y="84.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="72.0" y="96.2" font-size="9" fill="#1d2b3a" text-anchor="start">sku</text>
+<text x="205.0" y="96.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(40)</text>
+<text x="72.0" y="114.2" font-size="9" fill="#1d2b3a" text-anchor="start">name</text>
+<text x="205.0" y="114.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(200)</text>
+<rect x="41.0" y="120.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="50.0" y="132.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="72.0" y="132.2" font-size="9" fill="#1d2b3a" text-anchor="start">category_id</text>
+<text x="205.0" y="132.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<text x="72.0" y="150.2" font-size="9" fill="#1d2b3a" text-anchor="start">price</text>
+<text x="205.0" y="150.2" font-size="9" fill="#5f6f82" text-anchor="end">NUMERIC(10, 2)</text>
+<rect x="41.0" y="156.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="72.0" y="168.2" font-size="9" fill="#1d2b3a" text-anchor="start">active</text>
+<text x="205.0" y="168.2" font-size="9" fill="#5f6f82" text-anchor="end">BOOLEAN</text>
+<rect x="40.0" y="40.0" width="175.0" height="138.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="234.0" width="203.0" height="120.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="234.0" width="203.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="311.0" y="254.0" width="203.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-orders"><text x="321.0" y="251.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">orders</text></a>
+<text x="321.0" y="272.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="343.0" y="272.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="504.0" y="272.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="312.0" y="278.0" width="201.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="321.0" y="290.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="343.0" y="290.2" font-size="9" fill="#1d2b3a" text-anchor="start">customer_id</text>
+<text x="504.0" y="290.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<text x="321.0" y="308.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="343.0" y="308.2" font-size="9" fill="#1d2b3a" text-anchor="start">shipping_address_id</text>
+<text x="504.0" y="308.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="312.0" y="314.0" width="201.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="343.0" y="326.2" font-size="9" fill="#1d2b3a" text-anchor="start">status</text>
+<text x="504.0" y="326.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(20)</text>
+<text x="343.0" y="344.2" font-size="9" fill="#1d2b3a" text-anchor="start">placed_at</text>
+<text x="504.0" y="344.2" font-size="9" fill="#5f6f82" text-anchor="end">TIMESTAMP</text>
+<rect x="311.0" y="234.0" width="203.0" height="120.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="234.0" width="175.0" height="102.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="40.0" y="234.0" width="175.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="40.0" y="254.0" width="175.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-order-items"><text x="50.0" y="251.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">order_items</text></a>
+<text x="50.0" y="272.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="72.0" y="272.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">order_id</text>
+<text x="205.0" y="272.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="41.0" y="278.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="50.0" y="290.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="72.0" y="290.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">product_id</text>
+<text x="205.0" y="290.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<text x="72.0" y="308.2" font-size="9" fill="#1d2b3a" text-anchor="start">quantity</text>
+<text x="205.0" y="308.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="41.0" y="314.0" width="173.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="72.0" y="326.2" font-size="9" fill="#1d2b3a" text-anchor="start">unit_price</text>
+<text x="205.0" y="326.2" font-size="9" fill="#5f6f82" text-anchor="end">NUMERIC(10, 2)</text>
+<rect x="40.0" y="234.0" width="175.0" height="102.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="610.0" y="234.0" width="170.0" height="120.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="610.0" y="234.0" width="170.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="610.0" y="254.0" width="170.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-payments"><text x="620.0" y="251.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">payments</text></a>
+<text x="620.0" y="272.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="642.0" y="272.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="770.0" y="272.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="611.0" y="278.0" width="168.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="620.0" y="290.2" font-size="7" fill="#b45309" font-weight="bold" text-anchor="start">FK</text>
+<text x="642.0" y="290.2" font-size="9" fill="#1d2b3a" text-anchor="start">order_id</text>
+<text x="770.0" y="290.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<text x="642.0" y="308.2" font-size="9" fill="#1d2b3a" text-anchor="start">amount</text>
+<text x="770.0" y="308.2" font-size="9" fill="#5f6f82" text-anchor="end">NUMERIC(10, 2)</text>
+<rect x="611.0" y="314.0" width="168.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="642.0" y="326.2" font-size="9" fill="#1d2b3a" text-anchor="start">method</text>
+<text x="770.0" y="326.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(20)</text>
+<text x="642.0" y="344.2" font-size="9" fill="#1d2b3a" text-anchor="start">paid_at</text>
+<text x="770.0" y="344.2" font-size="9" fill="#5f6f82" text-anchor="end">TIMESTAMP</text>
+<rect x="610.0" y="234.0" width="170.0" height="120.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="410.0" width="173.0" height="102.0" rx="5" fill="#ffffff" stroke="#9fb0c3" stroke-width="1"/>
+<rect x="311.0" y="410.0" width="173.0" height="26.0" rx="5" fill="#0f766e" stroke="none" stroke-width="1"/>
+<rect x="311.0" y="430.0" width="173.0" height="6.0" rx="0" fill="#0f766e" stroke="none" stroke-width="1"/>
+<a href="#t-audit-log"><text x="321.0" y="427.0" font-size="11" fill="#ffffff" font-weight="bold" text-anchor="start">audit_log</text></a>
+<text x="321.0" y="448.2" font-size="7" fill="#0f766e" font-weight="bold" text-anchor="start">PK</text>
+<text x="343.0" y="448.2" font-size="9" fill="#1d2b3a" font-weight="bold" text-anchor="start">id</text>
+<text x="474.0" y="448.2" font-size="9" fill="#5f6f82" text-anchor="end">INTEGER</text>
+<rect x="312.0" y="454.0" width="171.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="343.0" y="466.2" font-size="9" fill="#1d2b3a" text-anchor="start">happened_at</text>
+<text x="474.0" y="466.2" font-size="9" fill="#5f6f82" text-anchor="end">TIMESTAMP</text>
+<text x="343.0" y="484.2" font-size="9" fill="#1d2b3a" text-anchor="start">actor</text>
+<text x="474.0" y="484.2" font-size="9" fill="#5f6f82" text-anchor="end">VARCHAR(80)</text>
+<rect x="312.0" y="490.0" width="171.0" height="18.0" rx="0" fill="#f3f6f9" stroke="none" stroke-width="1"/>
+<text x="343.0" y="502.2" font-size="9" fill="#1d2b3a" text-anchor="start">action</text>
+<text x="474.0" y="502.2" font-size="9" fill="#5f6f82" text-anchor="end">TEXT</text>
+<rect x="311.0" y="410.0" width="173.0" height="102.0" rx="5" fill="none" stroke="#9fb0c3" stroke-width="1"/>
+</svg></div>
+<div class="legend" aria-label="Diagram legend">
+  <span><svg width="44" height="14"><line x1="0" y1="7" x2="44" y2="7" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="36" y1="1" x2="36" y2="13" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="31" y1="1" x2="31" y2="13" stroke="#52667d" stroke-width="1.2"/></svg>exactly one</span>
+  <span><svg width="44" height="14"><line x1="0" y1="7" x2="44" y2="7" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="36" y1="1" x2="36" y2="13" stroke="#52667d" stroke-width="1.2"/>
+    <circle cx="27" cy="7" r="4" fill="#fff" stroke="#52667d" stroke-width="1.2"/></svg>zero or one</span>
+  <span><svg width="44" height="14"><line x1="0" y1="7" x2="44" y2="7" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="32" y1="7" x2="44" y2="1" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="32" y1="7" x2="44" y2="13" stroke="#52667d" stroke-width="1.2"/>
+    <line x1="28" y1="1" x2="28" y2="13" stroke="#52667d" stroke-width="1.2"/></svg>many</span>
+  <span><b style="color:#0f766e">PK</b> primary key &nbsp; <b style="color:#b45309">FK</b> foreign key</span>
+  <span>Lines are coloured by the table they point to.</span>
+</div>
+
+  </section>
+  <section id="relationships"><h2>Relationships</h2><div class='scroll'><table><thead><tr><th>Table (foreign key)</th><th>Refers to</th><th>Cardinality</th></tr></thead><tbody><tr><td><a href="#t-addresses"><code>addresses</code></a> (<code>customer_id</code>)</td><td><a href="#t-customers"><code>customers</code></a> (<code>id</code>)</td><td>Many to exactly one</td></tr><tr><td><a href="#t-categories"><code>categories</code></a> (<code>parent_id</code>)</td><td><a href="#t-categories"><code>categories</code></a> (<code>id</code>)</td><td>Many to zero or one</td></tr><tr><td><a href="#t-products"><code>products</code></a> (<code>category_id</code>)</td><td><a href="#t-categories"><code>categories</code></a> (<code>id</code>)</td><td>Many to zero or one</td></tr><tr><td><a href="#t-orders"><code>orders</code></a> (<code>shipping_address_id</code>)</td><td><a href="#t-addresses"><code>addresses</code></a> (<code>id</code>)</td><td>Many to zero or one</td></tr><tr><td><a href="#t-orders"><code>orders</code></a> (<code>customer_id</code>)</td><td><a href="#t-customers"><code>customers</code></a> (<code>id</code>)</td><td>Many to exactly one</td></tr><tr><td><a href="#t-order-items"><code>order_items</code></a> (<code>product_id</code>)</td><td><a href="#t-products"><code>products</code></a> (<code>id</code>)</td><td>Many to exactly one</td></tr><tr><td><a href="#t-order-items"><code>order_items</code></a> (<code>order_id</code>)</td><td><a href="#t-orders"><code>orders</code></a> (<code>id</code>)</td><td>Many to exactly one</td></tr><tr><td><a href="#t-payments"><code>payments</code></a> (<code>order_id</code>)</td><td><a href="#t-orders"><code>orders</code></a> (<code>id</code>)</td><td>One to exactly one</td></tr></tbody></table></div></section>
+  <section id="tables"><h2>Tables</h2>
+    <input id="filter" class="filter" type="search" placeholder="Filter tables" aria-label="Filter tables">
+    <nav class="toc"><a href='#t-customers' data-name='customers'>customers</a><a href='#t-addresses' data-name='addresses'>addresses</a><a href='#t-categories' data-name='categories'>categories</a><a href='#t-products' data-name='products'>products</a><a href='#t-orders' data-name='orders'>orders</a><a href='#t-order-items' data-name='order_items'>order_items</a><a href='#t-payments' data-name='payments'>payments</a><a href='#t-audit-log' data-name='audit_log'>audit_log</a></nav><section class='tbl' id='t-customers' data-name='customers'><h3>customers <span class='ext'>4 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>email</span></td><td><span class='type'>VARCHAR(255)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>full_name</span></td><td><span class='type'>VARCHAR(120)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>created_at</span></td><td><span class='type'>TIMESTAMP</span></td><td><span class='nn'>No</span></td><td><span class='type'>CURRENT_TIMESTAMP</span></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><p class='none'>None.</p></section><section class='tbl' id='t-addresses' data-name='addresses'><h3>addresses <span class='ext'>6 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>customer_id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k fk">FK</span></td><td><a href="#t-customers"><code>customers.id</code></a></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>line1</span></td><td><span class='type'>VARCHAR(200)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>city</span></td><td><span class='type'>VARCHAR(80)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>5</span></td><td><span class='id'>postcode</span></td><td><span class='type'>VARCHAR(20)</span></td><td>Yes</td><td></td><td></td><td></td></tr><tr><td><span class='nn'>6</span></td><td><span class='id'>country</span></td><td><span class='type'>CHAR(2)</span></td><td><span class='nn'>No</span></td><td><span class='type'>&#x27;US&#x27;</span></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><div class='ix'><span><code>customer_id</code></span></div></section><section class='tbl' id='t-categories' data-name='categories'><h3>categories <span class='ext'>3 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>name</span></td><td><span class='type'>VARCHAR(80)</span></td><td><span class='nn'>No</span></td><td></td><td></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>parent_id</span></td><td><span class='type'>INTEGER</span></td><td>Yes</td><td><span class="k fk">FK</span></td><td><a href="#t-categories"><code>categories.id</code></a></td></tr></tbody></table></div><h4>Indexes</h4><p class='none'>None.</p></section><section class='tbl' id='t-products' data-name='products'><h3>products <span class='ext'>6 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>sku</span></td><td><span class='type'>VARCHAR(40)</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k uq">UQ</span></td><td></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>name</span></td><td><span class='type'>VARCHAR(200)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>category_id</span></td><td><span class='type'>INTEGER</span></td><td>Yes</td><td></td><td><span class="k fk">FK</span></td><td><a href="#t-categories"><code>categories.id</code></a></td></tr><tr><td><span class='nn'>5</span></td><td><span class='id'>price</span></td><td><span class='type'>NUMERIC(10, 2)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr><tr><td><span class='nn'>6</span></td><td><span class='id'>active</span></td><td><span class='type'>BOOLEAN</span></td><td><span class='nn'>No</span></td><td><span class='type'>1</span></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><div class='ix'><span><code>category_id</code>, <code>active</code></span><span><code>sku</code> <span class="k uq">unique</span></span></div></section><section class='tbl' id='t-orders' data-name='orders'><h3>orders <span class='ext'>5 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>customer_id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k fk">FK</span></td><td><a href="#t-customers"><code>customers.id</code></a></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>shipping_address_id</span></td><td><span class='type'>INTEGER</span></td><td>Yes</td><td></td><td><span class="k fk">FK</span></td><td><a href="#t-addresses"><code>addresses.id</code></a></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>status</span></td><td><span class='type'>VARCHAR(20)</span></td><td><span class='nn'>No</span></td><td><span class='type'>&#x27;pending&#x27;</span></td><td></td><td></td></tr><tr><td><span class='nn'>5</span></td><td><span class='id'>placed_at</span></td><td><span class='type'>TIMESTAMP</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><div class='ix'><span><code>customer_id</code>, <code>placed_at</code></span></div></section><section class='tbl' id='t-order-items' data-name='order_items'><h3>order_items <span class='ext'>4 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Default</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>order_id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span><span class="k fk">FK</span></td><td><a href="#t-orders"><code>orders.id</code></a></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>product_id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td></td><td><span class="k pk">PK</span><span class="k fk">FK</span></td><td><a href="#t-products"><code>products.id</code></a></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>quantity</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td><span class='type'>1</span></td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>unit_price</span></td><td><span class='type'>NUMERIC(10, 2)</span></td><td><span class='nn'>No</span></td><td></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><p class='none'>None.</p></section><section class='tbl' id='t-payments' data-name='payments'><h3>payments <span class='ext'>5 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>order_id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td><span class="k fk">FK</span><span class="k uq">UQ</span></td><td><a href="#t-orders"><code>orders.id</code></a></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>amount</span></td><td><span class='type'>NUMERIC(10, 2)</span></td><td><span class='nn'>No</span></td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>method</span></td><td><span class='type'>VARCHAR(20)</span></td><td><span class='nn'>No</span></td><td></td><td></td></tr><tr><td><span class='nn'>5</span></td><td><span class='id'>paid_at</span></td><td><span class='type'>TIMESTAMP</span></td><td>Yes</td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><div class='ix'><span><code>order_id</code> <span class="k uq">unique</span></span></div></section><section class='tbl' id='t-audit-log' data-name='audit_log'><h3>audit_log <span class='ext'>4 columns</span><a class='top' href='#tables'>Back to table list</a></h3><div class='scroll'><table><thead><tr><th>#</th><th>Column</th><th>Type</th><th>Nullable</th><th>Keys</th><th>References</th></tr></thead><tbody><tr><td><span class='nn'>1</span></td><td><span class='id'>id</span></td><td><span class='type'>INTEGER</span></td><td><span class='nn'>No</span></td><td><span class="k pk">PK</span></td><td></td></tr><tr><td><span class='nn'>2</span></td><td><span class='id'>happened_at</span></td><td><span class='type'>TIMESTAMP</span></td><td><span class='nn'>No</span></td><td></td><td></td></tr><tr><td><span class='nn'>3</span></td><td><span class='id'>actor</span></td><td><span class='type'>VARCHAR(80)</span></td><td>Yes</td><td></td><td></td></tr><tr><td><span class='nn'>4</span></td><td><span class='id'>action</span></td><td><span class='type'>TEXT</span></td><td><span class='nn'>No</span></td><td></td><td></td></tr></tbody></table></div><h4>Indexes</h4><p class='none'>None.</p></section>
+  </section>
+</main>
+<footer>Generated by Schema Documenter 1.3.0</footer>
+<script>
+(function(){
+  var svg = document.querySelector('.erd svg'), scale = 1;
+  var w = svg ? svg.width.baseVal.value : 0, h = svg ? svg.height.baseVal.value : 0;
+  function apply(){ if(!svg) return; svg.setAttribute('width', w*scale); svg.setAttribute('height', h*scale);
+    document.getElementById('zoomval').textContent = Math.round(scale*100) + '%'; }
+  function fit(){ var box = document.querySelector('.erd'); scale = Math.min(1, (box.clientWidth-2)/w); apply(); }
+  document.getElementById('zin').onclick = function(){ scale = Math.min(3, scale*1.2); apply(); };
+  document.getElementById('zout').onclick = function(){ scale = Math.max(0.15, scale/1.2); apply(); };
+  document.getElementById('zfit').onclick = fit;
+  document.getElementById('dl').onclick = function(){
+    var clone = svg.cloneNode(true); clone.setAttribute('width', w); clone.setAttribute('height', h);
+    var blob = new Blob([new XMLSerializer().serializeToString(clone)], {type:'image/svg+xml'});
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'erd.svg';
+    document.body.appendChild(a); a.click(); a.remove(); };
+  if (svg) fit();
+  var f = document.getElementById('filter');
+  if (f) f.oninput = function(){ var q = f.value.toLowerCase();
+    document.querySelectorAll('.tbl').forEach(function(s){ s.hidden = q && s.dataset.name.indexOf(q) < 0; });
+    document.querySelectorAll('.toc a').forEach(function(a){ a.hidden = q && a.dataset.name.indexOf(q) < 0; }); };
+})();
+</script>
+</body></html>
